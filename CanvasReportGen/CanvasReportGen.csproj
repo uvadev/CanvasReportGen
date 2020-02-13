@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -70,8 +70,8 @@
       <HintPath>..\packages\Tomlyn.0.1.1\lib\net45\Tomlyn.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="UVACanvasAccess, Version=1.0.7341.25693, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\packages\UVACanvasAccess.1.0.3-rev1-build1580998582\lib\net472\UVACanvasAccess.exe</HintPath>
+    <Reference Include="UVACanvasAccess, Version=1.0.7348.26676, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\UVACanvasAccess.1.0.4-rev2-build1581605348\lib\net472\UVACanvasAccess.exe</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>

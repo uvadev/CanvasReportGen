@@ -46,6 +46,7 @@ namespace CanvasReportGen {
             for (;;) {
                 Console.WriteLine("Which report?");
                 Console.WriteLine("1: Zero Logins");
+                Console.WriteLine("2: Last Activity");
                 Console.Write("?> ");
                 Console.Out.Flush();
 
@@ -53,6 +54,9 @@ namespace CanvasReportGen {
                     switch (n) {
                         case 1:
                             await Reports.ZeroLogins(token, string.Format(outPath, "ZeroLogins"));
+                            return;
+                        case 2:
+                            await Reports.LastActivity(token, string.Format(outPath, "LastActivity"));
                             return;
                         default:
                             Console.WriteLine("no\n");
