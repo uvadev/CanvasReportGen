@@ -10,7 +10,7 @@ using static UVACanvasAccess.Structures.Authentications.EventType;
 namespace CanvasReportGen {
     internal static class Reports {
 
-        private static bool IsParent(User u) => u.SisUserId?.Contains("pG") ?? false;
+        private static bool IsParent(User u) => u.SisUserId?.ToLowerInvariant().Contains("pg") ?? false;
 
         internal static async Task ZeroLogins(string token, string outPath) {
 
@@ -47,7 +47,7 @@ namespace CanvasReportGen {
                 try {
                     var first = await api.StreamUserPageViews(user.Id)
                                          .SkipWhile(pv => (pv.Links?.RealUser.HasValue ?? false) &&
-                                                           pv.Links.RealUser.Value != user.Id)
+                                                           pv.Links.RealUser.Value != user.Id) // ignore masqueraded views 
                                          .FirstAsync();
 
                     sb.Append($"\n{user.Id},{user.SisUserId ?? "?"},{first.CreatedAt},{first.Url}");
