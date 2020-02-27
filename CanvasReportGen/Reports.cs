@@ -23,9 +23,14 @@ namespace CanvasReportGen {
             await foreach (var user in api.StreamUsers()
                                           .Where(u => !IsParent(u))
                                           .WhereAwait(async u => !await u.IsTeacher())) {
-
-                if (!await api.StreamUserAuthenticationEvents(user.Id).Where(e => e.Event == Login).AnyAsync()) {
-                    sb.Append($"\n{user.Id},{user.SisUserId ?? "?"}");
+                try {
+                    if (!await api.StreamUserAuthenticationEvents(user.Id)
+                                  .Where(e => e.Event == Login)
+                                  .AnyAsync()) {
+                        sb.Append($"\n{user.Id},{user.SisUserId ?? "?"}");
+                    }
+                } catch (Exception e) {
+                    Console.WriteLine($"Warning: exception during user {user.Id}\n{e}");
                 }
             }
             
