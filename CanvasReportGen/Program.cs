@@ -22,6 +22,13 @@ namespace CanvasReportGen {
                             Items = {
                                 {"token", "PUT_TOKEN_HERE"}
                             }
+                        },
+                        new TableSyntax("sis") {
+                            Items = {
+                                {"use_sis", false},
+                                {"current_year", "1920"},
+                                {"conn_str", "PUT_CONN_STR_HERE"}
+                            }
                         }
                     }
                 });
@@ -38,6 +45,15 @@ namespace CanvasReportGen {
 
             var token = config.GetTable("tokens")
                               .Get<string>("token");
+
+            var sisTable = config.GetTable("sis");
+            
+            Database.UseSis = sisTable.Get<bool>("use_sis");
+
+            if (Database.UseSis) {
+                Database.ConnStr = sisTable.Get<string>("conn_str");
+                Database.CurrentYear = sisTable.Get<string>("current_year");
+            }
 
             var started = DateTime.Now;
             

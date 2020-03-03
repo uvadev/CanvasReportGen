@@ -18,16 +18,30 @@ namespace CanvasReportGen {
 
             var api = new Api(token, "https://uview.instructure.com/api/v1/");
             
-            var sb = new StringBuilder("user_id,sis_id");
+            var sb = new StringBuilder("user_id,sis_id,address,city,zip,first_name,last_name,grade");
+
+            await using var db = Database.UseSis ? await Database.Connect() 
+                                                 : null;
             
             await foreach (var user in api.StreamUsers()
                                           .Where(u => !IsParent(u))
                                           .WhereAwait(async u => !await u.IsTeacher())) {
                 try {
-                    if (!await api.StreamUserAuthenticationEvents(user.Id)
-                                  .Where(e => e.Event == Login)
-                                  .AnyAsync()) {
-                        sb.Append($"\n{user.Id},{user.SisUserId ?? "?"}");
+                    if (await api.StreamUserAuthenticationEvents(user.Id)
+                                 .Where(e => e.Event == Login)
+                                 .AnyAsync()) { continue; }
+                    
+                    sb.Append($"\n{user.Id},{user.SisUserId ?? "?"}");
+
+                    if (Database.UseSis && user.SisUserId != null) {
+                        var data = await db.GetInfoBySis(user.SisUserId);
+                        if (data != null) {
+                            sb.Append($",{data.Address},{data.City},{data.Zip},{data.FirstName},{data.LastName},{data.Grade}");
+                        } else {
+                            sb.Append(",?,?,?,?,?,?");
+                        }
+                    } else {
+                        sb.Append(",?,?,?,?,?,?");
                     }
                 } catch (Exception e) {
                     Console.WriteLine($"Warning: exception during user {user.Id}\n{e}");
@@ -44,7 +58,10 @@ namespace CanvasReportGen {
             
             var api = new Api(token, "https://uview.instructure.com/api/v1/");
 
-            var sb = new StringBuilder("user_id,sis_id,date,url");
+            var sb = new StringBuilder("user_id,sis_id,date,url,address,city,zip,first_name,last_name,grade");
+            
+            await using var db = Database.UseSis ? await Database.Connect() 
+                                                 : null;
 
             await foreach (var user in api.StreamUsers()
                                           .Where(u => !IsParent(u))
@@ -55,7 +72,19 @@ namespace CanvasReportGen {
                                                            pv.Links.RealUser.Value != user.Id) // ignore masqueraded views 
                                          .FirstAsync();
 
-                    sb.Append($"\n{user.Id},{user.SisUserId ?? "?"},{first.CreatedAt},{first.Url}");
+                    sb.Append($"\n{user.Id},{user.SisUserId ?? "?"},{first.CreatedAt},\"{first.Url}\"");
+
+                    if (Database.UseSis && user.SisUserId != null) {
+                        var data = await db.GetInfoBySis(user.SisUserId);
+                        if (data != null) {
+                            sb.Append($",{data.Address},{data.City},{data.Zip},{data.FirstName},{data.LastName},{data.Grade}");
+                        } else {
+                            sb.Append(",?,?,?,?,?,?");
+                        }
+                    } else {
+                        sb.Append(",?,?,?,?,?,?");
+                    }
+                    
                 } catch (InvalidOperationException) {
                     Console.WriteLine($"Note: No activity for {user.Id}");
                 } catch (Exception e) {
