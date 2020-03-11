@@ -60,9 +60,10 @@ namespace CanvasReportGen {
             var outPath = Path.Combine(home.NsDir, "{0}" + $"_{started.Ticks}.csv");
 
             for (;;) {
-                Console.WriteLine("Which report?");
+                Console.WriteLine("Which report? (* = needs SIS; ! = work in progress)");
                 Console.WriteLine("1: Zero Logins");
                 Console.WriteLine("2: Last Activity");
+                Console.WriteLine("3: Truancy *!");
                 Console.Write("?> ");
                 Console.Out.Flush();
 
@@ -73,6 +74,9 @@ namespace CanvasReportGen {
                             return;
                         case 2:
                             await Reports.LastActivity(token, string.Format(outPath, "LastActivity"));
+                            return;
+                        case 3:
+                            await Reports.Truancy(token, string.Format(outPath, "Truancy"));
                             return;
                         default:
                             Console.WriteLine("no\n");

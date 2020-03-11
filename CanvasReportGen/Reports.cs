@@ -95,5 +95,56 @@ namespace CanvasReportGen {
             File.WriteAllText(outPath, sb.ToString());
             Console.WriteLine($"Wrote report to {outPath}");
         }
+
+        internal static async Task Truancy(string token, string outPath) {
+
+            if (!Database.UseSis) {
+                Console.WriteLine("Please enable SIS to run the Truancy report.");
+                return;
+            }
+            
+            Console.WriteLine("Running Truancy...");
+
+            var api = new Api(token, "https://uview.instructure.com/api/v1/");
+            
+            var sb = new StringBuilder("user_id,sis_id,last_access,first_name,last_name,grade,phone,district,address," +
+                                       "city,state,zip,mother_name,father_name,mother_email,father_email,mother_cell,father_cell");
+
+            await using var enumerationDb = await Database.Connect();
+            await using var dataDb = await Database.Connect();
+
+            await foreach (var sis in enumerationDb.GetTruancyCheckStudents()) {
+                try {
+                    var user = await api.StreamUsers(sis)
+                                        .FirstOrDefaultAsync(u => u.SisUserId == sis);
+                    if (user == null) {
+                        Console.WriteLine($"Warning: User with sis `{sis}` does not seem to exist in Canvas.");
+                        sb.Append($"\n?,{sis},indeterminate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?");
+                        continue;
+                    }
+                    
+                    var mostRecent = await api.StreamUserPageViews(user.Id)
+                                              .SkipWhile(pv => (pv.Links?.RealUser.HasValue ?? false) && 
+                                                                pv.Links.RealUser.Value != user.Id) // ignore masqueraded views 
+                                              .FirstOrDefaultAsync();
+
+                    if (mostRecent != default && mostRecent.CreatedAt.AddDays(8) >= DateTime.Now) {
+                        continue;
+                    }
+                    
+                    var dtStr = mostRecent?.CreatedAt.ToString("yyyy-MM-dd'T'HH':'mm':'ssK") ?? "never";
+                    var data = await dataDb.GetTruancyInfo(sis);
+                    
+                    sb.Append($"\n{user.Id},{sis},{dtStr},{data.FirstName},{data.LastName},{data.Grade},{data.Phone}," +
+                              $"{data.District},{data.Address},{data.City},{data.State},{data.Zip},{data.MotherName}," +
+                              $"{data.FatherName},{data.MotherEmail},{data.FatherEmail},{data.MotherCell},{data.FatherCell}");
+                } catch (Exception e) {
+                    Console.WriteLine($"Warning: exception during user with sis `{sis}`\n{e}");
+                }
+            }
+            
+            File.WriteAllText(outPath, sb.ToString());
+            Console.WriteLine($"Wrote report to {outPath}");
+        }
     }
 }
