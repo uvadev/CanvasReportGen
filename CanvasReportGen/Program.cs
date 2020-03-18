@@ -64,6 +64,7 @@ namespace CanvasReportGen {
                 Console.WriteLine("1: Zero Logins");
                 Console.WriteLine("2: Last Activity");
                 Console.WriteLine("3: Truancy *!");
+                Console.WriteLine("4: Truancy from Logins *!");
                 Console.Write("?> ");
                 Console.Out.Flush();
 
@@ -77,6 +78,9 @@ namespace CanvasReportGen {
                             return;
                         case 3:
                             await Reports.Truancy(token, string.Format(outPath, "Truancy"));
+                            return;
+                        case 4:
+                            await Reports.TruancyFromLogins(token, string.Format(outPath, "TruancyFromLogins"));
                             return;
                         default:
                             Console.WriteLine("no\n");
