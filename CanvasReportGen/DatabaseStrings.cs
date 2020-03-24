@@ -33,6 +33,6 @@ where styear = @y and stsidno = @s;";
         internal const string TruancyEntryDateQuery = @"
 select trim(stsidno) as sid
 from stu0001
-where styear = @y and stschool = '001' and stedate < current_date - interval '14d'";
+where styear = @y and stschool = '001' and stedate < current_date - interval '14d' and stldate is null";
     }
 }
