@@ -74,7 +74,10 @@ namespace CanvasReportGen {
                     reader.GetStringOrDefault(11),
                     reader.GetStringOrDefault(12),
                     reader.GetStringOrDefault(13),
-                    reader.GetStringOrDefault(14)
+                    reader.GetStringOrDefault(14),
+                    reader.GetDateTimeStringOrDefault(15),
+                    reader.GetDateTimeStringOrDefault(16),
+                    reader.GetStringOrDefault(17)
                 );
             }
 
@@ -128,8 +131,11 @@ namespace CanvasReportGen {
         public string FatherEmail { get; }
         public string MotherCell { get; }
         public string FatherCell { get; }
+        public string DateOfBirth { get; }
+        public string EntryDate { get; }
+        public string Gender { get; }
 
-        public TruancyStudentInfo(string firstName, string lastName, string grade, string phone, string district, string address, string city, string state, string zip, string motherName, string fatherName, string motherEmail, string fatherEmail, string motherCell, string fatherCell) {
+        public TruancyStudentInfo(string firstName, string lastName, string grade, string phone, string district, string address, string city, string state, string zip, string motherName, string fatherName, string motherEmail, string fatherEmail, string motherCell, string fatherCell, string dob, string entryDate, string gender) {
             FirstName = firstName;
             LastName = lastName;
             Grade = grade;
@@ -145,6 +151,9 @@ namespace CanvasReportGen {
             FatherEmail = fatherEmail;
             MotherCell = motherCell;
             FatherCell = fatherCell;
+            DateOfBirth = dob;
+            EntryDate = entryDate;
+            Gender = gender;
         }
     }
 }

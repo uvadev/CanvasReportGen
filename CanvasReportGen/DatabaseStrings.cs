@@ -26,13 +26,16 @@ select trim(stfname)   as first_name,
        trim(stmemail) as mother_email,
        trim(stfemail) as father_email,
        concat(trim(stmcellph), trim(stmcellph1)) as mother_cell,
-       concat(trim(stfcellph), trim(stfcellph1)) as father_cell
+       concat(trim(stfcellph), trim(stfcellph1)) as father_cell,
+       stbirthdate as dob,
+       stedate as entry_date,
+       trim(stgender) as gender
 from stu0001
 where styear = @y and stsidno = @s;";
 
         internal const string TruancyEntryDateQuery = @"
 select trim(stsidno) as sid
 from stu0001
-where styear = @y and stschool = '001' and stedate < current_date - interval '14d' and stldate is null";
+where styear = @y and stschool = '001' and stedate < current_date - interval '21d' and stldate is null";
     }
 }

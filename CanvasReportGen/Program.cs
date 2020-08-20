@@ -26,7 +26,7 @@ namespace CanvasReportGen {
                         new TableSyntax("sis") {
                             Items = {
                                 {"use_sis", false},
-                                {"current_year", "1920"},
+                                {"current_year", "2021"},
                                 {"conn_str", "PUT_CONN_STR_HERE"}
                             }
                         }
@@ -66,7 +66,7 @@ namespace CanvasReportGen {
                 Console.WriteLine("3: Truancy *!");
                 Console.WriteLine("4: Truancy from Logins *!");
                 Console.Write("?> ");
-                Console.Out.Flush();
+                await Console.Out.FlushAsync();
 
                 if (int.TryParse(Console.ReadLine(), out var n)) {
                     switch (n) {
