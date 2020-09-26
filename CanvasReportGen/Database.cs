@@ -55,7 +55,7 @@ namespace CanvasReportGen {
             
             query.Parameters.AddWithValue("y", CurrentYear);
             query.Parameters.AddWithValue("s", sis);
-            query.Prepare();
+            await query.PrepareAsync();
             
             await using var reader = await query.ExecuteReaderAsync();
             if (await reader.ReadAsync()) {
@@ -77,7 +77,8 @@ namespace CanvasReportGen {
                     reader.GetStringOrDefault(14),
                     reader.GetDateTimeStringOrDefault(15),
                     reader.GetDateTimeStringOrDefault(16),
-                    reader.GetStringOrDefault(17)
+                    reader.GetStringOrDefault(17),
+                    reader.GetStringOrDefault(18)
                 );
             }
 
@@ -134,8 +135,9 @@ namespace CanvasReportGen {
         public string DateOfBirth { get; }
         public string EntryDate { get; }
         public string Gender { get; }
+        public string School { get; }
 
-        public TruancyStudentInfo(string firstName, string lastName, string grade, string phone, string district, string address, string city, string state, string zip, string motherName, string fatherName, string motherEmail, string fatherEmail, string motherCell, string fatherCell, string dob, string entryDate, string gender) {
+        public TruancyStudentInfo(string firstName, string lastName, string grade, string phone, string district, string address, string city, string state, string zip, string motherName, string fatherName, string motherEmail, string fatherEmail, string motherCell, string fatherCell, string dob, string entryDate, string gender, string school) {
             FirstName = firstName;
             LastName = lastName;
             Grade = grade;
@@ -154,6 +156,7 @@ namespace CanvasReportGen {
             DateOfBirth = dob;
             EntryDate = entryDate;
             Gender = gender;
+            School = school;
         }
     }
 }

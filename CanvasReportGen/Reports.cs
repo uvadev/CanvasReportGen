@@ -109,7 +109,7 @@ namespace CanvasReportGen {
             
             var sb = new StringBuilder("user_id,sis_id,last_access,first_name,last_name,grade,phone,district,address," +
                                        "city,state,zip,mother_name,father_name,mother_email,father_email,mother_cell,father_cell," +
-                                       "dob,entry_date,gender");
+                                       "dob,entry_date,gender,school");
 
             await using var enumerationDb = await Database.Connect();
             await using var dataDb = await Database.Connect();
@@ -120,7 +120,7 @@ namespace CanvasReportGen {
                                         .FirstOrDefaultAsync(u => u.SisUserId == sis);
                     if (user == null) {
                         Console.WriteLine($"Warning: User with sis `{sis}` does not seem to exist in Canvas.");
-                        sb.Append($"\n?,{sis},indeterminate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?");
+                        sb.Append($"\n?,{sis},indeterminate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?");
                         continue;
                     }
                     
@@ -139,7 +139,7 @@ namespace CanvasReportGen {
                     sb.Append($"\n{user.Id},{sis},{dtStr},{data.FirstName},{data.LastName},{data.Grade},{data.Phone}," +
                               $"{data.District},{data.Address},{data.City},{data.State},{data.Zip},{data.MotherName}," +
                               $"{data.FatherName},{data.MotherEmail},{data.FatherEmail},{data.MotherCell},{data.FatherCell}," +
-                              $"{data.DateOfBirth},{data.EntryDate},{data.Gender}");
+                              $"{data.DateOfBirth},{data.EntryDate},{data.Gender},{data.School}");
                 } catch (Exception e) {
                     Console.WriteLine($"Warning: exception during user with sis `{sis}`\n{e}");
                 }
