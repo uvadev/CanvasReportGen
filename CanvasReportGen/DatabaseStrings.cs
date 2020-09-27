@@ -23,15 +23,21 @@ select trim(stfname)   as first_name,
        trim(stzip911)  as zip,
        concat(trim(stmfname), ' ', trim(stmlname)) as mother_name,
        concat(trim(stffname), ' ', trim(stflname)) as father_name,
+       concat(trim(stgfname), ' ', trim(stglname)) as guardian_name,
        trim(stmemail) as mother_email,
        trim(stfemail) as father_email,
+       trim(stgemail) as guardian_email,
        concat(trim(stmcellph), trim(stmcellph1)) as mother_cell,
        concat(trim(stfcellph), trim(stfcellph1)) as father_cell,
+       concat(trim(stgcellph), trim(stgcellph1)) as guardian_cell,
        stbirthdate as dob,
        stedate as entry_date,
        trim(stgender) as gender,
-       stschool as school
+       trim(stschool) as school,
+       trim(stresdistrict) as residence_district_code,
+       trim(cddescription) as residence_district_name
 from stu0001
+inner join code on stresdistrict = cdcode and cdtype = 'districts'
 where styear = @y and stsidno = @s;";
 
         internal const string TruancyEntryDateQuery = @"

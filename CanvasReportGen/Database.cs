@@ -60,25 +60,30 @@ namespace CanvasReportGen {
             await using var reader = await query.ExecuteReaderAsync();
             if (await reader.ReadAsync()) {
                 return new TruancyStudentInfo(
-                    reader.GetStringOrDefault(0),
-                    reader.GetStringOrDefault(1),
-                    reader.GetStringOrDefault(2),
-                    reader.GetStringOrDefault(3),
-                    reader.GetStringOrDefault(4),
-                    reader.GetStringOrDefault(5),
-                    reader.GetStringOrDefault(6),
-                    reader.GetStringOrDefault(7),
-                    reader.GetStringOrDefault(8),
-                    reader.GetStringOrDefault(9),
-                    reader.GetStringOrDefault(10),
-                    reader.GetStringOrDefault(11),
-                    reader.GetStringOrDefault(12),
-                    reader.GetStringOrDefault(13),
-                    reader.GetStringOrDefault(14),
-                    reader.GetDateTimeStringOrDefault(15),
-                    reader.GetDateTimeStringOrDefault(16),
-                    reader.GetStringOrDefault(17),
-                    reader.GetStringOrDefault(18)
+                    reader.GetStringOrDefault(reader.GetOrdinal("first_name")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("last_name")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("grade")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("phone")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("district")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("address")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("city")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("state")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("zip")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("mother_name")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("father_name")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("guardian_name")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("mother_email")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("father_email")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("guardian_email")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("mother_cell")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("father_cell")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("guardian_cell")),
+                    reader.GetDateTimeStringOrDefault(reader.GetOrdinal("dob")),
+                    reader.GetDateTimeStringOrDefault(reader.GetOrdinal("entry_date")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("gender")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("school")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("residence_district_code")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("residence_district_name"))
                 );
             }
 
@@ -128,16 +133,21 @@ namespace CanvasReportGen {
         public string Zip { get; }
         public string MotherName { get; }
         public string FatherName { get; }
+        public string GuardianName { get; }
         public string MotherEmail { get; }
         public string FatherEmail { get; }
+        public string GuardianEmail { get; }
         public string MotherCell { get; }
         public string FatherCell { get; }
+        public string GuardianCell { get; }
         public string DateOfBirth { get; }
         public string EntryDate { get; }
         public string Gender { get; }
         public string School { get; }
+        public string ResidenceDistrictCode { get; }
+        public string ResidenceDistrictName { get; }
 
-        public TruancyStudentInfo(string firstName, string lastName, string grade, string phone, string district, string address, string city, string state, string zip, string motherName, string fatherName, string motherEmail, string fatherEmail, string motherCell, string fatherCell, string dob, string entryDate, string gender, string school) {
+        public TruancyStudentInfo(string firstName, string lastName, string grade, string phone, string district, string address, string city, string state, string zip, string motherName, string fatherName, string guardianName, string motherEmail, string fatherEmail, string guardianEmail, string motherCell, string fatherCell, string guardianCell, string dob, string entryDate, string gender, string school, string residenceDistrictCode, string residenceDistrictName) {
             FirstName = firstName;
             LastName = lastName;
             Grade = grade;
@@ -149,14 +159,18 @@ namespace CanvasReportGen {
             Zip = zip;
             MotherName = motherName;
             FatherName = fatherName;
+            GuardianName = guardianName;
             MotherEmail = motherEmail;
             FatherEmail = fatherEmail;
+            GuardianEmail = guardianEmail;
             MotherCell = motherCell;
             FatherCell = fatherCell;
             DateOfBirth = dob;
             EntryDate = entryDate;
             Gender = gender;
             School = school;
+            ResidenceDistrictCode = residenceDistrictCode;
+            ResidenceDistrictName = residenceDistrictName;
         }
     }
 }
