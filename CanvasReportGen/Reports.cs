@@ -1,16 +1,23 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UVACanvasAccess.ApiParts;
+using UVACanvasAccess.Structures.Courses;
 using UVACanvasAccess.Structures.Users;
+using UVACanvasAccess.Util;
+using static UVACanvasAccess.ApiParts.Api.CourseEnrollmentType;
 using static UVACanvasAccess.Structures.Authentications.EventType;
 
 namespace CanvasReportGen {
     internal static class Reports {
 
         private static bool IsParent(User u) => u.SisUserId?.ToLowerInvariant().Contains("pg") ?? false;
+        
+        private static readonly Regex SisYearPattern = new Regex("^(?<year>\\d{4})~.+");
 
         internal static async Task ZeroLogins(string token, string outPath) {
 
@@ -110,7 +117,7 @@ namespace CanvasReportGen {
             var sb = new StringBuilder("user_id,sis_id,last_access,first_name,last_name,grade,phone,district,address," +
                                        "city,state,zip,mother_name,father_name,guardian_name,mother_email,father_email,guardian_email," +
                                        "mother_cell,father_cell,guardian_cell,dob,entry_date,gender,school,residence_district_code," +
-                                       "residence_district_name");
+                                       "residence_district_name,failing_course_ids,failing_course_names");
 
             await using var enumerationDb = await Database.Connect();
             await using var dataDb = await Database.Connect();
@@ -121,7 +128,7 @@ namespace CanvasReportGen {
                                         .FirstOrDefaultAsync(u => u.SisUserId == sis);
                     if (user == null) {
                         Console.WriteLine($"Warning: User with sis `{sis}` does not seem to exist in Canvas.");
-                        sb.Append($"\n?,{sis},indeterminate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?");
+                        sb.Append($"\n?,{sis},indeterminate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?");
                         continue;
                     }
                     
@@ -136,15 +143,62 @@ namespace CanvasReportGen {
                         continue;
                     }
                     
+                    var failingCourses = new LinkedList<Course>();
+
+                    await foreach (var e in api.StreamUserEnrollments(user.Id, StudentEnrollment.Yield())) {
+                        var course = await api.GetCourse(e.CourseId);
+                        
+                        if ("active" != e.EnrollmentState) {
+                            continue;
+                        }
+                        
+                        // Concluded enrollments are sometimes reported by the api as active, so we have to try our best
+                        // to disregard "active" enrollments in courses from past years.
+                        
+                        // Disregard if the course is unpublished...
+                        if ("available" != course.WorkflowState) {
+                            continue;
+                        }
+                        
+                        // Disregard if the SIS follows standard format and contains the wrong year...
+                        if (!string.IsNullOrWhiteSpace(course.SisCourseId)) {
+                            var m = SisYearPattern.Match(course.SisCourseId);
+                            if (m.Success && m.Groups["year"].Value != "2020") {
+                                continue;
+                            }
+                        }
+                        
+                        var grade = e.Grades?.CurrentGrade;
+                        var score = e.Grades?.CurrentScore;
+
+                        if (string.IsNullOrWhiteSpace(grade) && string.IsNullOrWhiteSpace(score) && string.IsNullOrWhiteSpace(course.SisCourseId)) {
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(grade) && string.IsNullOrWhiteSpace(score)) {
+                            failingCourses.AddLast(course);
+                        } else if ("F" == grade) {
+                            failingCourses.AddLast(course);
+                        } else if (double.TryParse(score, out var nScore) && nScore <= 66) {
+                            failingCourses.AddLast(course);
+                        }
+                    }
+
+                    if (!failingCourses.Any()) {
+                        continue;
+                    }
+
                     var dtStr = mostRecent?.CreatedAt.ToString("yyyy-MM-dd'T'HH':'mm':'ssK") ?? "never";
                     var data = await dataDb.GetTruancyInfo(sis);
+                    var failingCourseIds = "\"" + string.Join(";", failingCourses.Select(c => c.Id)) + "\"";
+                    var failingCourseNames = "\"" + string.Join(";", failingCourses.Select(c => c.Name)) + "\"";
                     
                     sb.Append($"\n{user.Id},{sis},{dtStr},{data.FirstName},{data.LastName},{data.Grade},{data.Phone}," +
                               $"{data.District},{data.Address},{data.City},{data.State},{data.Zip},{data.MotherName}," +
                               $"{data.FatherName},{data.GuardianName},{data.MotherEmail},{data.FatherEmail}," +
                               $"{data.GuardianEmail},{data.MotherCell},{data.FatherCell},{data.GuardianCell}," +
                               $"{data.DateOfBirth},{data.EntryDate},{data.Gender},{data.School},{data.ResidenceDistrictCode}," +
-                              $"{data.ResidenceDistrictName}");
+                              $"{data.ResidenceDistrictName},{failingCourseIds},{failingCourseNames}");
                 } catch (Exception e) {
                     Console.WriteLine($"Warning: exception during user with sis `{sis}`\n{e}");
                 }
