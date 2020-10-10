@@ -29,6 +29,12 @@ namespace CanvasReportGen {
                                 {"current_year", "2021"},
                                 {"conn_str", "PUT_CONN_STR_HERE"}
                             }
+                        },
+                        new TableSyntax("truancy") {
+                            Items = {
+                                {"sis_id_year", "2020"},
+                                {"subaccounts", new string[] {}}
+                            }
                         }
                     }
                 });
@@ -77,7 +83,7 @@ namespace CanvasReportGen {
                             await Reports.LastActivity(token, string.Format(outPath, "LastActivity"));
                             return;
                         case 3:
-                            await Reports.Truancy(token, string.Format(outPath, "Truancy"));
+                            await Reports.Truancy(token, string.Format(outPath, "Truancy"), config.GetTable("truancy"));
                             return;
                         //case 4:
                         //    await Reports.TruancyFromLogins(token, string.Format(outPath, "TruancyFromLogins"));

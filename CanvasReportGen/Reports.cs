@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using AppUtils;
+using Tomlyn.Model;
 using UVACanvasAccess.ApiParts;
 using UVACanvasAccess.Structures.Courses;
 using UVACanvasAccess.Structures.Users;
@@ -17,7 +19,7 @@ namespace CanvasReportGen {
 
         private static bool IsParent(User u) => u.SisUserId?.ToLowerInvariant().Contains("pg") ?? false;
         
-        private static readonly Regex SisYearPattern = new Regex("^(?<year>\\d{4})~.+");
+        private static readonly Regex CourseSisIdPattern = new Regex("^(?<year>\\d{4})~.+");
 
         internal static async Task ZeroLogins(string token, string outPath) {
 
@@ -103,21 +105,29 @@ namespace CanvasReportGen {
             Console.WriteLine($"Wrote report to {outPath}");
         }
 
-        internal static async Task Truancy(string token, string outPath) {
+        internal static async Task Truancy(string token, string outPath, TomlTable truancyConfig) {
 
             if (!Database.UseSis) {
                 Console.WriteLine("Please enable SIS to run the Truancy report.");
                 return;
             }
+
+            if (truancyConfig == null) {
+                Console.WriteLine("Truancy config table is null.");
+                return;
+            }
+
+            var sisIdYear = truancyConfig.Get<string>("sis_id_year");
+            var subaccounts = truancyConfig.Get<TomlArray>("subaccounts").Cast<string>().ToArray();
             
             Console.WriteLine("Running Truancy...");
 
             var api = new Api(token, "https://uview.instructure.com/api/v1/");
             
-            var sb = new StringBuilder("user_id,sis_id,last_access,first_name,last_name,grade,phone,district,address," +
+            var sb = new StringBuilder("user_id,sis_id,last_access,first_name,last_name,grade,phone,address," +
                                        "city,state,zip,mother_name,father_name,guardian_name,mother_email,father_email,guardian_email," +
-                                       "mother_cell,father_cell,guardian_cell,dob,entry_date,gender,school,residence_district_code," +
-                                       "residence_district_name,failing_course_ids,failing_course_names");
+                                       "mother_cell,father_cell,guardian_cell,dob,entry_date,gender,school," +
+                                       "district_of_residence,failing_courses");
 
             await using var enumerationDb = await Database.Connect();
             await using var dataDb = await Database.Connect();
@@ -128,7 +138,7 @@ namespace CanvasReportGen {
                                         .FirstOrDefaultAsync(u => u.SisUserId == sis);
                     if (user == null) {
                         Console.WriteLine($"Warning: User with sis `{sis}` does not seem to exist in Canvas.");
-                        sb.Append($"\n?,{sis},indeterminate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?");
+                        sb.Append($"\n?,{sis},indeterminate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?");
                         continue;
                     }
                     
@@ -162,10 +172,17 @@ namespace CanvasReportGen {
                         
                         // Disregard if the SIS follows standard format and contains the wrong year...
                         if (!string.IsNullOrWhiteSpace(course.SisCourseId)) {
-                            var m = SisYearPattern.Match(course.SisCourseId);
-                            if (m.Success && m.Groups["year"].Value != "2020") {
+                            var m = CourseSisIdPattern.Match(course.SisCourseId);
+                            if (m.Success && m.Groups["year"].Value != sisIdYear) {
                                 continue;
                             }
+                        }
+
+                        var subaccountName = await api.GetAccount(course.AccountId)
+                                                      .ThenApply(a => a?.Name);
+
+                        if (subaccountName != null && !subaccounts.Contains(subaccountName)) {
+                            continue;
                         }
                         
                         var grade = e.Grades?.CurrentGrade;
@@ -190,15 +207,15 @@ namespace CanvasReportGen {
 
                     var dtStr = mostRecent?.CreatedAt.ToString("yyyy-MM-dd'T'HH':'mm':'ssK") ?? "never";
                     var data = await dataDb.GetTruancyInfo(sis);
-                    var failingCourseIds = "\"" + string.Join(";", failingCourses.Select(c => c.Id)) + "\"";
+                    //var failingCourseIds = "\"" + string.Join(";", failingCourses.Select(c => c.Id)) + "\"";
                     var failingCourseNames = "\"" + string.Join(";", failingCourses.Select(c => c.Name)) + "\"";
                     
                     sb.Append($"\n{user.Id},{sis},{dtStr},{data.FirstName},{data.LastName},{data.Grade},{data.Phone}," +
-                              $"{data.District},{data.Address},{data.City},{data.State},{data.Zip},{data.MotherName}," +
+                              $"{data.Address},{data.City},{data.State},{data.Zip},{data.MotherName}," +
                               $"{data.FatherName},{data.GuardianName},{data.MotherEmail},{data.FatherEmail}," +
                               $"{data.GuardianEmail},{data.MotherCell},{data.FatherCell},{data.GuardianCell}," +
-                              $"{data.DateOfBirth},{data.EntryDate},{data.Gender},{data.School},{data.ResidenceDistrictCode}," +
-                              $"{data.ResidenceDistrictName},{failingCourseIds},{failingCourseNames}");
+                              $"{data.DateOfBirth},{data.EntryDate},{data.Gender},{data.School}," +
+                              $"{data.ResidenceDistrictName},{failingCourseNames}");
                 } catch (Exception e) {
                     Console.WriteLine($"Warning: exception during user with sis `{sis}`\n{e}");
                 }
