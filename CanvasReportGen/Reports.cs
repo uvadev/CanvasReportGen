@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using AppUtils;
 using Tomlyn.Model;
 using UVACanvasAccess.ApiParts;
+using UVACanvasAccess.Structures.Accounts;
 using UVACanvasAccess.Structures.Courses;
 using UVACanvasAccess.Structures.Users;
 using UVACanvasAccess.Util;
@@ -118,7 +119,7 @@ namespace CanvasReportGen {
             }
 
             var sisIdYear = truancyConfig.Get<string>("sis_id_year");
-            var subaccounts = truancyConfig.Get<TomlArray>("subaccounts").Cast<string>().ToArray();
+            var subaccountsFilter = truancyConfig.Get<TomlArray>("subaccounts").Cast<string>().ToArray();
             
             Console.WriteLine("Running Truancy...");
 
@@ -170,27 +171,30 @@ namespace CanvasReportGen {
                             continue;
                         }
                         
-                        // Disregard if the SIS follows standard format and contains the wrong year...
-                        if (!string.IsNullOrWhiteSpace(course.SisCourseId)) {
-                            var m = CourseSisIdPattern.Match(course.SisCourseId);
-                            if (m.Success && m.Groups["year"].Value != sisIdYear) {
-                                continue;
-                            }
+                        // Disregard if no SIS
+                        if (string.IsNullOrWhiteSpace(course.SisCourseId)) {
+                            continue;
                         }
 
-                        var subaccountName = await api.GetAccount(course.AccountId)
-                                                      .ThenApply(a => a?.Name);
+                        // Disregard if the SIS doesn't follow the standard course format with the current year
+                        var m = CourseSisIdPattern.Match(course.SisCourseId);
+                        if (!m.Success || m.Groups["year"].Value != sisIdYear) {
+                            continue;
+                        }
 
-                        if (subaccountName != null && !subaccounts.Contains(subaccountName)) {
+                        var subaccountNames = await GetAccountSet(api, await api.GetAccount(course.AccountId))
+                                                   .ThenApply(s => s.Select(a => a?.Name));
+
+                        if (!subaccountsFilter.Intersect(subaccountNames).Any()) {
                             continue;
                         }
                         
                         var grade = e.Grades?.CurrentGrade;
                         var score = e.Grades?.CurrentScore;
 
-                        if (string.IsNullOrWhiteSpace(grade) && string.IsNullOrWhiteSpace(score) && string.IsNullOrWhiteSpace(course.SisCourseId)) {
-                            continue;
-                        }
+                        //if (string.IsNullOrWhiteSpace(grade) && string.IsNullOrWhiteSpace(score) && string.IsNullOrWhiteSpace(course.SisCourseId)) {
+                        //    continue;
+                        //}
 
                         if (string.IsNullOrWhiteSpace(grade) && string.IsNullOrWhiteSpace(score)) {
                             failingCourses.AddLast(course);
@@ -223,6 +227,16 @@ namespace CanvasReportGen {
             
             File.WriteAllText(outPath, sb.ToString());
             Console.WriteLine($"Wrote report to {outPath} at {DateTime.Now:HH':'mm':'ss}");
+        }
+
+        private static async Task<HashSet<Account>> GetAccountSet(Api api, Account a) {
+            var set = new HashSet<Account> { a };
+            while (a.ParentAccountId.HasValue) {
+                a = await api.GetAccount(a.ParentAccountId.Value);
+                set.Add(a);
+            }
+
+            return set;
         }
         
         internal static async Task TruancyFromLogins(string token, string outPath) {
