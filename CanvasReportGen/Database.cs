@@ -42,7 +42,7 @@ namespace CanvasReportGen {
             using var query = new NpgsqlCommand(DatabaseStrings.TruancyEntryDateQuery, _connection);
 
             query.Parameters.AddWithValue("y", CurrentYear);
-            query.Prepare();
+            await query.PrepareAsync();
 
             await using var reader = await query.ExecuteReaderAsync();
             while (await reader.ReadAsync()) {
@@ -64,6 +64,7 @@ namespace CanvasReportGen {
                     reader.GetStringOrDefault(reader.GetOrdinal("last_name")),
                     reader.GetStringOrDefault(reader.GetOrdinal("grade")),
                     reader.GetStringOrDefault(reader.GetOrdinal("phone")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("cell")),
                     reader.GetStringOrDefault(reader.GetOrdinal("district")),
                     reader.GetStringOrDefault(reader.GetOrdinal("address")),
                     reader.GetStringOrDefault(reader.GetOrdinal("city")),
@@ -82,8 +83,12 @@ namespace CanvasReportGen {
                     reader.GetDateTimeStringOrDefault(reader.GetOrdinal("entry_date")),
                     reader.GetStringOrDefault(reader.GetOrdinal("gender")),
                     reader.GetStringOrDefault(reader.GetOrdinal("school")),
-                    reader.GetStringOrDefault(reader.GetOrdinal("residence_district_code")),
-                    reader.GetStringOrDefault(reader.GetOrdinal("residence_district_name"))
+                    reader.GetStringOrDefault(reader.GetOrdinal("residence_district_name")),
+                    Convert.ToUInt16(reader.GetDouble(reader.GetOrdinal("age"))),
+                    reader.GetStringOrDefault(reader.GetOrdinal("ethnicity")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("language")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("guardian_relationship")),
+                    reader.GetStringOrDefault(reader.GetOrdinal("sped"))
                 );
             }
 
@@ -126,6 +131,7 @@ namespace CanvasReportGen {
         public string LastName { get; }
         public string Grade { get; }
         public string Phone { get; }
+        public string Cell { get; }
         public string District { get; }
         public string Address { get; }
         public string City { get; }
@@ -144,14 +150,25 @@ namespace CanvasReportGen {
         public string EntryDate { get; }
         public string Gender { get; }
         public string School { get; }
-        public string ResidenceDistrictCode { get; }
         public string ResidenceDistrictName { get; }
+        public ushort Age { get; }
+        public string Ethnicity { get; }
+        public string Language { get; }
+        public string GuardianRelationship { get; }
+        public string Sped { get; }
 
-        public TruancyStudentInfo(string firstName, string lastName, string grade, string phone, string district, string address, string city, string state, string zip, string motherName, string fatherName, string guardianName, string motherEmail, string fatherEmail, string guardianEmail, string motherCell, string fatherCell, string guardianCell, string dob, string entryDate, string gender, string school, string residenceDistrictCode, string residenceDistrictName) {
+        public TruancyStudentInfo(
+            string firstName, string lastName, string grade, string phone, string cell, string district, string address,
+            string city, string state, string zip, string motherName, string fatherName, string guardianName, 
+            string motherEmail, string fatherEmail, string guardianEmail, string motherCell, string fatherCell, 
+            string guardianCell, string dob, string entryDate, string gender, string school, string residenceDistrictName,
+            ushort age, string ethnicity, string language, string guardianRelationship, string sped
+        ) {
             FirstName = firstName;
             LastName = lastName;
             Grade = grade;
             Phone = phone;
+            Cell = cell;
             District = district;
             Address = address;
             City = city;
@@ -165,12 +182,17 @@ namespace CanvasReportGen {
             GuardianEmail = guardianEmail;
             MotherCell = motherCell;
             FatherCell = fatherCell;
+            GuardianCell = guardianCell;
             DateOfBirth = dob;
             EntryDate = entryDate;
             Gender = gender;
             School = school;
-            ResidenceDistrictCode = residenceDistrictCode;
             ResidenceDistrictName = residenceDistrictName;
+            Age = age;
+            Ethnicity = ethnicity;
+            Language = language;
+            GuardianRelationship = guardianRelationship;
+            Sped = sped;
         }
     }
 }

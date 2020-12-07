@@ -66,11 +66,11 @@ namespace CanvasReportGen {
             var outPath = Path.Combine(home.NsDir, "{0}" + $"_{started.Ticks}.csv");
 
             for (;;) {
-                Console.WriteLine("Which report? (* = needs SIS; ! = work in progress)");
+                Console.WriteLine("Which report? (* = needs SIS)");
                 Console.WriteLine("1: Zero Logins");
                 Console.WriteLine("2: Last Activity");
-                Console.WriteLine("3: Truancy *!");
-                //Console.WriteLine("4: Truancy from Logins *!");
+                Console.WriteLine("3: *Truancy");
+                Console.WriteLine("4: *Truancy (Short Interval)");
                 Console.Write("?> ");
                 await Console.Out.FlushAsync();
 
@@ -83,17 +83,22 @@ namespace CanvasReportGen {
                             await Reports.LastActivity(token, string.Format(outPath, "LastActivity"));
                             return;
                         case 3:
-                            await Reports.Truancy(token, string.Format(outPath, "Truancy"), config.GetTable("truancy"));
+                            await Reports.Truancy(token, 
+                                                  string.Format(outPath, "Truancy"),
+                                                  config.GetTable("truancy"));
                             return;
-                        //case 4:
-                        //    await Reports.TruancyFromLogins(token, string.Format(outPath, "TruancyFromLogins"));
-                        //    return;
+                        case 4:
+                            await Reports.Truancy(token, 
+                                                  string.Format(outPath, "TruancyShort"),
+                                                  config.GetTable("truancy"), 
+                                                  true);
+                            return;
                         default:
-                            Console.WriteLine("no\n");
+                            Console.WriteLine("Please choose a report.\n");
                             break;
                     }
                 } else {
-                    Console.WriteLine("no\n");
+                    Console.WriteLine("Please choose a report.\n");
                 }
             }
         }

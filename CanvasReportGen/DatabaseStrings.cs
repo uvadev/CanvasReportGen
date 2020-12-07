@@ -16,6 +16,7 @@ select trim(stfname)   as first_name,
        trim(stlname)   as last_name,
        trim(stgrade)   as grade,
        concat(trim(sthphone), trim(sthphone1)) as phone,
+       concat(trim(stcellph), trim(stcellph1)) as cell,
        trim(stdistrict) as district,
        concat(trim(staddress1911), '  ', trim(staddress2911)) as address,
        trim(stcity911) as city,
@@ -34,10 +35,18 @@ select trim(stfname)   as first_name,
        stedate as entry_date,
        trim(stgender) as gender,
        trim(stschool) as school,
+       extract(years from age(stbirthdate)) as age,
        trim(stresdistrict) as residence_district_code,
-       trim(cddescription) as residence_district_name
+       trim(district.cddescription) as residence_district_name,
+       trim(ethnic.cddescription) as ethnicity,
+       array_to_string(array_remove(array_remove(ARRAY[stspec0, stspec1, stspec2, stspec3, stspec4, stspec5, stspec6, stspec7, stspec8, stspec9], '   '), null), ';') as sped,
+       language.cddescription as language,
+       relationship.cddescription as guardian_relationship
 from stu0001
-inner join code on stresdistrict = cdcode and cdtype = 'districts'
+left join code district on stresdistrict = district.cdcode and district.cdtype = 'districts'
+left join code ethnic on stethnic = ethnic.cdcode and ethnic.cdtype = 'ethnic2010'
+left join (select distinct cdcode, cdtype, cddescription from code) language on language.cdcode like stlanguagecode||'-%' and language.cdtype = 'per_language'
+left join code relationship on stgrelationship = relationship.cdcode and relationship.cdtype = 'jcmbbxParentRelation'
 where styear = @y and stsidno = @s;";
 
         internal const string TruancyEntryDateQuery = @"
