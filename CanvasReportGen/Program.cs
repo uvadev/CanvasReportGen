@@ -9,6 +9,11 @@ namespace CanvasReportGen {
     internal static class Program {
         
         public static async Task Main(string[] args) {
+            var selected = -1;
+            if (args.Length > 0) {
+                int.TryParse(args[0], out selected);
+            }
+            
             var home = new AppHome("canvas_report_gen");
             
             Console.WriteLine($"Using config path: {home.ConfigPath}");
@@ -61,10 +66,12 @@ namespace CanvasReportGen {
                 Database.CurrentYear = sisTable.Get<string>("current_year");
             }
 
+            var emailTable = config.GetTable("email");
+
             var started = DateTime.Now;
             
             var outPath = Path.Combine(home.NsDir, "{0}" + $"_{started.Ticks}.csv");
-
+            
             for (;;) {
                 Console.WriteLine("Which report? (* = needs SIS)");
                 Console.WriteLine("1: Zero Logins");
@@ -74,24 +81,32 @@ namespace CanvasReportGen {
                 Console.Write("?> ");
                 await Console.Out.FlushAsync();
 
-                if (int.TryParse(Console.ReadLine(), out var n)) {
-                    switch (n) {
+                if (selected > -1 || int.TryParse(Console.ReadLine(), out selected)) {
+                    switch (selected) {
                         case 1:
                             await Reports.ZeroLogins(token, string.Format(outPath, "ZeroLogins"));
+                            Mailman.SendReport(emailTable, "ZeroLogins", outPath, started);
                             return;
                         case 2:
                             await Reports.LastActivity(token, string.Format(outPath, "LastActivity"));
+                            Mailman.SendReport(emailTable, "LastActivity", outPath, started);
                             return;
                         case 3:
                             await Reports.Truancy(token, 
                                                   string.Format(outPath, "Truancy"),
                                                   config.GetTable("truancy"));
+                            Mailman.SendReport(emailTable, "Truancy", outPath, started);
                             return;
                         case 4:
                             await Reports.Truancy(token, 
                                                   string.Format(outPath, "TruancyShort"),
                                                   config.GetTable("truancy"), 
                                                   true);
+                            Mailman.SendReport(emailTable, "TruancyShort", outPath, started);
+                            return;
+                        case 0:
+                            File.WriteAllText(string.Format(outPath, "Dummy"), "dummy1,dummy2\na,b\n");
+                            Mailman.SendReport(emailTable, "Dummy", outPath, started);
                             return;
                         default:
                             Console.WriteLine("Please choose a report.\n");
