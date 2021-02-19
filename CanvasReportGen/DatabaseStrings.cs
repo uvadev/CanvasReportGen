@@ -39,7 +39,8 @@ select trim(stfname)   as first_name,
        trim(stresdistrict) as residence_district_code,
        trim(district.cddescription) as residence_district_name,
        trim(ethnic.cddescription) as ethnicity,
-       array_to_string(array_remove(array_remove(ARRAY[stspec0, stspec1, stspec2, stspec3, stspec4, stspec5, stspec6, stspec7, stspec8, stspec9], '   '), null), ';') as sped,
+       st504.sfsidno is not null as has_504,
+       sped.sesidno is not null as has_sped,
        language.cddescription as language,
        relationship.cddescription as guardian_relationship
 from stu0001
@@ -47,6 +48,8 @@ left join code district on stresdistrict = district.cdcode and district.cdtype =
 left join code ethnic on stethnic = ethnic.cdcode and ethnic.cdtype = 'ethnic2010'
 left join (select distinct cdcode, cdtype, cddescription from code) language on language.cdcode like stlanguagecode||'-%' and language.cdtype = 'per_language'
 left join code relationship on stgrelationship = relationship.cdcode and relationship.cdtype = 'jcmbbxParentRelation'
+left join (select distinct sfsidno from st504) st504 on stsidno = st504.sfsidno
+left join (select distinct sesidno from specialedservices) sped on stsidno = sped.sesidno
 where styear = @y and stsidno = @s;";
 
         internal const string TruancyEntryDateQuery = @"

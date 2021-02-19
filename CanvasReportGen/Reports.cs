@@ -128,7 +128,7 @@ namespace CanvasReportGen {
             var sb = new StringBuilder("user_id,sis_id,last_access,first_name,last_name,grade,phone,cell,address," +
                                        "city,state,zip,mother_name,father_name,guardian_name,mother_email,father_email,guardian_email," +
                                        "mother_cell,father_cell,guardian_cell,dob,entry_date,gender,school," +
-                                       "district_of_residence,age,ethnicity,language,guardian_relationship,sped,failing_courses");
+                                       "district_of_residence,age,ethnicity,language,guardian_relationship,has_sped,has_504,failing_courses");
 
             await using var enumerationDb = await Database.Connect();
             await using var dataDb = await Database.Connect();
@@ -139,7 +139,7 @@ namespace CanvasReportGen {
                                         .FirstOrDefaultAsync(u => u.SisUserId == sis);
                     if (user == null) {
                         Console.WriteLine($"Warning: User with sis `{sis}` does not seem to exist in Canvas.");
-                        sb.Append($"\n?,{sis},indeterminate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?");
+                        sb.Append($"\n?,{sis},indeterminate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?");
                         continue;
                     }
                     
@@ -165,14 +165,18 @@ namespace CanvasReportGen {
                     var failingCourses = new LinkedList<Course>();
 
                     await foreach (var e in api.StreamUserEnrollments(user.Id, StudentEnrollment.Yield())) {
-                        var course = await api.GetCourse(e.CourseId);
-                        
-                        if ("active" != e.EnrollmentState) {
+                        var course = await api.GetCourse(e.CourseId, includes: Api.IndividualLevelCourseIncludes.Term);
+
+                        if (course.Term?.EndAt != null && course.Term.EndAt < DateTime.Now) {
                             continue;
                         }
                         
                         // Concluded enrollments are sometimes reported by the api as active, so we have to try our best
                         // to disregard "active" enrollments in courses from past years.
+                        
+                        if ("active" != e.EnrollmentState) {
+                            continue;
+                        }
                         
                         // Disregard if the course is unpublished...
                         if ("available" != course.WorkflowState) {
@@ -215,7 +219,7 @@ namespace CanvasReportGen {
 
                     var dtStr = mostRecent?.CreatedAt.ToString("yyyy-MM-dd'T'HH':'mm':'ssK") ?? "never";
                     var data = await dataDb.GetTruancyInfo(sis);
-                    var failingCourseNames = "\"" + string.Join(";", failingCourses.Select(c => c.Name)) + "\"";
+                    var failingCourseNames = "\"" + string.Join(";", failingCourses.Select(c => c.Name).Distinct()) + "\"";
                     
                     sb.Append($"\n{user.Id},{sis},{dtStr},{data.FirstName},{data.LastName},{data.Grade},{data.Phone}," +
                               $"{data.Cell},{data.Address},{data.City},{data.State},{data.Zip},{data.MotherName}," +
@@ -223,7 +227,7 @@ namespace CanvasReportGen {
                               $"{data.GuardianEmail},{data.MotherCell},{data.FatherCell},{data.GuardianCell}," +
                               $"{data.DateOfBirth},{data.EntryDate},{data.Gender},{data.School}," +
                               $"{data.ResidenceDistrictName},{data.Age},{data.Ethnicity},{data.Language}," +
-                              $"\"{data.GuardianRelationship}\",\"{data.Sped}\",{failingCourseNames}");
+                              $"\"{data.GuardianRelationship}\",{data.HasSped},{data.Has504},{failingCourseNames}");
                 } catch (Exception e) {
                     Console.WriteLine($"Warning: exception during user with sis `{sis}`\n{e}");
                 }

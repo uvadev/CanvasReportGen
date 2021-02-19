@@ -88,7 +88,8 @@ namespace CanvasReportGen {
                     reader.GetStringOrDefault(reader.GetOrdinal("ethnicity")),
                     reader.GetStringOrDefault(reader.GetOrdinal("language")),
                     reader.GetStringOrDefault(reader.GetOrdinal("guardian_relationship")),
-                    reader.GetStringOrDefault(reader.GetOrdinal("sped"))
+                    reader.GetBoolean(reader.GetOrdinal("has_sped")),
+                    reader.GetBoolean(reader.GetOrdinal("has_504"))
                 );
             }
 
@@ -155,14 +156,15 @@ namespace CanvasReportGen {
         public string Ethnicity { get; }
         public string Language { get; }
         public string GuardianRelationship { get; }
-        public string Sped { get; }
+        public bool HasSped { get; }
+        public bool Has504 { get; }
 
         public TruancyStudentInfo(
             string firstName, string lastName, string grade, string phone, string cell, string district, string address,
             string city, string state, string zip, string motherName, string fatherName, string guardianName, 
             string motherEmail, string fatherEmail, string guardianEmail, string motherCell, string fatherCell, 
             string guardianCell, string dob, string entryDate, string gender, string school, string residenceDistrictName,
-            ushort age, string ethnicity, string language, string guardianRelationship, string sped
+            ushort age, string ethnicity, string language, string guardianRelationship, bool hasSped, bool has504
         ) {
             FirstName = firstName;
             LastName = lastName;
@@ -192,7 +194,8 @@ namespace CanvasReportGen {
             Ethnicity = ethnicity;
             Language = language;
             GuardianRelationship = guardianRelationship;
-            Sped = sped;
+            Has504 = has504;
+            HasSped = hasSped;
         }
     }
 }
