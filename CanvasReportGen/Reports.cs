@@ -246,6 +246,36 @@ namespace CanvasReportGen {
 
             return set;
         }
+
+        internal static async Task GradeLevels(string token, string outPath) {
+            if (!Database.UseSis) {
+                Console.WriteLine("Please enable SIS to run the Grade Levels report.");
+                return;
+            }
+            
+            Console.WriteLine("Running Grade Levels..");
+
+            var api = new Api(token, "https://uview.instructure.com/api/v1/");
+            
+            var sb = new StringBuilder("user_id,sis_id,grade");
+            
+            await using var db = await Database.Connect();
+            await foreach (var (sis, grade) in db.GetGradeLevels()) {
+                try {
+                    var user = await api.GetUserBySis(sis);
+                    if (user == null) {
+                        Console.WriteLine($"Warning: user with sis {sis} not in canvas.");
+                        continue;
+                    }
+                    sb.Append($"\n{user.Id},{sis},{grade}");
+                } catch (Exception e) {
+                    Console.WriteLine($"Warning: exception during user with sis `{sis}`\n{e}");
+                }
+            }
+            
+            File.WriteAllText(outPath, sb.ToString());
+            Console.WriteLine($"Wrote report to {outPath} at {DateTime.Now:HH':'mm':'ss}");
+        }
         
         internal static async Task TruancyFromLogins(string token, string outPath) {
 

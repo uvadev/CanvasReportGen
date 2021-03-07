@@ -50,6 +50,18 @@ namespace CanvasReportGen {
             } 
         }
 
+        internal async IAsyncEnumerable<(string, string)> GetGradeLevels() {
+            using var query = new NpgsqlCommand(DatabaseStrings.GradeLevelQuery, _connection);
+
+            query.Parameters.AddWithValue("y", CurrentYear);
+            await query.PrepareAsync();
+
+            await using var reader = await query.ExecuteReaderAsync();
+            while (await reader.ReadAsync()) {
+                yield return (reader.GetString(reader.GetOrdinal("sis")), reader.GetString(reader.GetOrdinal("grade")));
+            }
+        }
+
         internal async Task<TruancyStudentInfo> GetTruancyInfo(string sis) {
             using var query = new NpgsqlCommand(DatabaseStrings.TruancyInfoQuery, _connection);
             

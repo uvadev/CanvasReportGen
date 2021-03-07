@@ -59,5 +59,11 @@ where styear = @y
   and stschool in ('001', '201')
   and stedate < current_date - interval '21d' 
   and stldate is null";
+
+        internal const string GradeLevelQuery = @"
+select trim(stsidno) as sis,
+       trim(stgrade) as grade
+from stu0001
+where styear = @y and stldate is null";
     }
 }
