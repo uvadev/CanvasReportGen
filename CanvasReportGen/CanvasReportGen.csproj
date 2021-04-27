@@ -150,8 +150,8 @@
       <HintPath>..\packages\Tomlyn.0.1.1\lib\net45\Tomlyn.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="UVACanvasAccess, Version=1.0.7691.33620, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\packages\UVACanvasAccess.1.1.0-build1611254437\lib\net472\UVACanvasAccess.exe</HintPath>
+    <Reference Include="UVACanvasAccess, Version=1.0.7746.8636, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\UVACanvasAccess.1.1.1-build1615956468\lib\net472\UVACanvasAccess.exe</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
