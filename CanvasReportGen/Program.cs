@@ -79,6 +79,7 @@ namespace CanvasReportGen {
                 Console.WriteLine("3: *Truancy");
                 Console.WriteLine("4: *Truancy (Short Interval)");
                 Console.WriteLine("5: *Grade Levels");
+                Console.WriteLine("6: *Grade Levels (Sync to Canvas)");
                 Console.Write("?> ");
                 await Console.Out.FlushAsync();
 
@@ -108,6 +109,10 @@ namespace CanvasReportGen {
                         case 5:
                             await Reports.GradeLevels(token, string.Format(outPath, "GradeLevels"));
                             Mailman.SendReport(emailTable, "GradeLevels", outPath, started);
+                            return;
+                        case 6:
+                            await Reports.GradeLevels(token, string.Format(outPath, "GradeLevels"), true);
+                            //Mailman.SendReport(emailTable, "GradeLevels", outPath, started);
                             return;
                         case 0:
                             File.WriteAllText(string.Format(outPath, "Dummy"), "dummy1,dummy2\na,b\n");

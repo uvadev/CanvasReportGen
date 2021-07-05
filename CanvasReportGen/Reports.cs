@@ -6,10 +6,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AppUtils;
+using Newtonsoft.Json.Linq;
 using Tomlyn.Model;
 using UVACanvasAccess.ApiParts;
 using UVACanvasAccess.Structures.Accounts;
 using UVACanvasAccess.Structures.Courses;
+using UVACanvasAccess.Structures.CustomGradebookColumns;
 using UVACanvasAccess.Structures.Users;
 using UVACanvasAccess.Util;
 using static UVACanvasAccess.ApiParts.Api.CourseEnrollmentType;
@@ -247,7 +249,7 @@ namespace CanvasReportGen {
             return set;
         }
 
-        internal static async Task GradeLevels(string token, string outPath) {
+        internal static async Task GradeLevels(string token, string outPath, bool syncToCanvas = false) {
             if (!Database.UseSis) {
                 Console.WriteLine("Please enable SIS to run the Grade Levels report.");
                 return;
@@ -259,24 +261,79 @@ namespace CanvasReportGen {
             
             var sb = new StringBuilder("user_id,sis_id,grade");
             
-            await using var db = await Database.Connect();
-            await foreach (var (sis, grade) in db.GetGradeLevels()) {
-                try {
-                    var user = await api.GetUserBySis(sis);
-                    if (user == null) {
-                        Console.WriteLine($"Warning: user with sis {sis} not in canvas.");
-                        continue;
+            var updateDict = new Dictionary<ulong, HashSet<Api.ColumnEntryUpdate>>();
+
+            //await using var db = await Database.Connect();
+            await using (var db = await Database.Connect()) {
+                await foreach (var (sis, grade) in db.GetGradeLevels()) {
+                    try {
+                        var user = await api.GetUserBySis(sis);
+                        if (user == null) {
+                            Console.WriteLine($"Warning: user with sis {sis} not in canvas.");
+                            continue;
+                        }
+                        sb.Append($"\n{user.Id},{sis},{grade}");
+
+                        if (!syncToCanvas) {
+                            continue;
+                        }
+
+                        try {
+                            await api.StoreCustomJson("academy.uview.tech", "meta", JObject.FromObject(new {
+                                gradeLevel = grade,
+                                canvasId = user.Id,
+                                sisId = sis,
+                                updatedOn = DateTime.Now.ToIso8601Date()
+                            }));
+                        } catch (Exception e) {
+                            Console.WriteLine($"Warning: exception during userdata sync for user with sis `{sis}`\n{e}");
+                        }
+                        
+                        try {
+                            await foreach (var e in api.StreamUserEnrollments(user.Id,
+                                                                              StudentEnrollment.Yield(), 
+                                                                              Api.CourseEnrollmentState.Active.Yield())) {
+                                updateDict.GetOrConstruct(e.CourseId).Add(new Api.ColumnEntryUpdate {
+                                    UserId = user.Id,
+                                    ColumnId = await api.GetOrCreateColumn(e.CourseId, "Grade_Level")
+                                                        .ThenApply(col => col.Id),
+                                    Content = grade
+                                });
+                            }
+                        } catch (Exception e) {
+                            Console.WriteLine($"Warning: exception during column update setup for user with sis `{sis}`\n{e}");
+                        }
+                    } catch (Exception e) {
+                        Console.WriteLine($"Warning: exception during user with sis `{sis}`\n{e}");
                     }
-                    sb.Append($"\n{user.Id},{sis},{grade}");
+                }
+            }
+            
+            if (syncToCanvas) {
+                try {
+                    foreach (var (courseId, updates) in updateDict) {
+                        await api.UpdateCustomColumnEntries(courseId, updates);
+                    }
                 } catch (Exception e) {
-                    Console.WriteLine($"Warning: exception during user with sis `{sis}`\n{e}");
+                    Console.WriteLine($"Warning: exception during bulk update\n{e}");
                 }
             }
             
             File.WriteAllText(outPath, sb.ToString());
             Console.WriteLine($"Wrote report to {outPath} at {DateTime.Now:HH':'mm':'ss}");
         }
-        
+
+        private static async Task<CustomColumn> GetOrCreateColumn(this Api api, ulong courseId, string name) {
+            var old = await api.StreamCustomGradebookColumns(courseId)
+                               .FirstOrDefaultAsync(col => name == col.Title);
+            
+            if (old != default) {
+                return old;
+            }
+            
+            return await api.CreateCustomColumn(courseId, name);
+        }
+
         internal static async Task TruancyFromLogins(string token, string outPath) {
 
             if (!Database.UseSis) {
